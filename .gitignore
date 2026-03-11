@@ -11,3 +11,6 @@ wheels/
 
 # macOS Finder metadata
 .DS_Store
+
+# Local model checkpoints
+src/预训练/model.pth
