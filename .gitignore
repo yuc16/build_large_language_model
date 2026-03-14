@@ -19,3 +19,7 @@ data/pre_train/Qwen2.5-0.5B/
 data/pre_train/Qwen2.5-0.5B-Instruct/
 data/post_train/*.jsonl
 data/post_train/*-lora/
+data/qwen_zh_sft/raw/*.jsonl
+data/qwen_zh_sft/adapters/
+data/qwen_zh_short_sft/raw/*.jsonl
+data/qwen_zh_short_sft/adapters/
