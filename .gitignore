@@ -13,4 +13,4 @@ wheels/
 .DS_Store
 
 # Local model checkpoints
-src/预训练/model.pth
+learn_llm/预训练/model.pth
