@@ -35,7 +35,10 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--model-dir", type=Path, default=DEFAULT_MODEL_DIR)
     parser.add_argument("--adapter-dir", type=Path, default=DEFAULT_ADAPTER_DIR)
-    parser.add_argument("--prompt", default="法国的首都在哪里")
+    parser.add_argument(
+        "--prompt",
+        default="你是一个有帮助的助手。\n### 指令：100+1等于几\n### 回答：",
+    )
     parser.add_argument("--max-new-tokens", type=int, default=128)
     parser.add_argument("--temperature", type=float, default=0)
     parser.add_argument("--device", default="auto")
