@@ -37,7 +37,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--model-dir", type=Path, default=DEFAULT_MODEL_DIR)
     parser.add_argument("--adapter-dir", type=Path, default=DEFAULT_ADAPTER_DIR)
-    parser.add_argument("--instruction", default="美国的首都在哪里")
+    parser.add_argument("--instruction", default="介绍一下比亚迪")
     parser.add_argument("--input-text", default="")
     parser.add_argument(
         "--prompt",

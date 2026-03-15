@@ -12,6 +12,7 @@
 - `download_dataset.py`：下载 Hugging Face 数据集子集并保存到本地。
 - `train_sft.py`：用 LoRA 做一个最小监督微调。
 - `infer_sft.py`：加载 `Qwen2.5-0.5B + LoRA adapter` 做推理。
+- `eval_ab.py`：在同一批测试题、同一模板、同一解码参数下，对比 base 与 SFT。
 
 ## 使用的数据集
 
@@ -73,6 +74,37 @@ uv run python src/post_train/train_sft.py \
 ```bash
 uv run python src/post_train/infer_sft.py --instruction "请介绍一下什么是监督微调。"
 ```
+
+## 第四步：做公平的 A/B 对比
+
+```bash
+uv run python src/post_train/eval_ab.py
+```
+
+默认会：
+
+- 对 base 和 SFT 使用同一个 prompt 模板
+- 对两边使用同样的 `temperature` 和 `max_new_tokens`
+- 使用一组更偏格式控制、抽取、分类和改写的内置测试题
+- 输出逐题对比结果和一个轻量汇总
+
+如果你想用自己的评测集：
+
+```bash
+uv run python src/post_train/eval_ab.py --eval-path data/post_train/eval_cases.jsonl
+```
+
+`jsonl` 每行示例：
+
+```json
+{"name":"capital_us","instruction":"美国的首都在哪里","input":"","reference":"华盛顿"}
+```
+
+其中：
+
+- `instruction` 必填
+- `input` 可选
+- `reference` 可选；如果提供，脚本会额外统计 `exact_match` 和 `contains_reference`
 
 ## 训练脚本核心参数
 

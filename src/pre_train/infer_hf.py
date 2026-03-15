@@ -23,7 +23,10 @@ def parse_args() -> argparse.Namespace:
         description="加载 Hugging Face 预训练权重并做文本生成。"
     )
     parser.add_argument("--model-dir", type=Path, default=DEFAULT_HF_MODEL_DIR)
-    parser.add_argument("--prompt", default="美国的首都在哪里")
+    parser.add_argument(
+        "--prompt",
+        default="你是一个有帮助的助手。\n\n### 指令：介绍一下比亚迪\n\n### 回答：",
+    )
     parser.add_argument("--max-new-tokens", type=int, default=1024)
     parser.add_argument("--temperature", type=float, default=0)
     parser.add_argument("--device", default="auto")
