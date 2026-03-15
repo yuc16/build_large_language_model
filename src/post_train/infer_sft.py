@@ -7,6 +7,8 @@ import torch
 from peft import PeftModel
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
+from train_sft import format_prompt
+
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MODEL_DIR = ROOT / "data" / "pre_train" / "Qwen2.5-0.5B"
@@ -35,9 +37,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--model-dir", type=Path, default=DEFAULT_MODEL_DIR)
     parser.add_argument("--adapter-dir", type=Path, default=DEFAULT_ADAPTER_DIR)
+    parser.add_argument("--instruction", default="美国的首都在哪里")
+    parser.add_argument("--input-text", default="")
     parser.add_argument(
         "--prompt",
-        default="你是一个有帮助的助手。\n### 指令：100+1等于几\n### 回答：",
+        default=None,
+        help="Optional raw prompt override. When omitted, the script builds the same template used in training.",
     )
     parser.add_argument("--max-new-tokens", type=int, default=128)
     parser.add_argument("--temperature", type=float, default=0)
@@ -58,7 +63,12 @@ def main() -> None:
     model = PeftModel.from_pretrained(base_model, args.adapter_dir).to(device)
     model.eval()
 
-    inputs = tokenizer(args.prompt, return_tensors="pt").to(device)
+    prompt = (
+        args.prompt
+        if args.prompt is not None
+        else format_prompt(args.instruction, args.input_text)
+    )
+    inputs = tokenizer(prompt, return_tensors="pt").to(device)
     do_sample = args.temperature > 0
 
     with torch.no_grad():
@@ -67,16 +77,20 @@ def main() -> None:
             max_new_tokens=args.max_new_tokens,
             do_sample=do_sample,
             temperature=args.temperature if do_sample else None,
+            eos_token_id=tokenizer.eos_token_id,
             pad_token_id=tokenizer.pad_token_id,
         )
+    new_ids = output_ids[0, inputs["input_ids"].shape[1] :]
 
     print("mode=sft_lora_inference")
     print(f"model_dir={args.model_dir}")
     print(f"adapter_dir={args.adapter_dir}")
     print(f"device={device}")
     print(f"temperature={args.temperature}")
+    print("prompt:")
+    print(prompt)
     print("generated_text:")
-    print(tokenizer.decode(output_ids[0], skip_special_tokens=True))
+    print(tokenizer.decode(new_ids, skip_special_tokens=True))
 
 
 if __name__ == "__main__":
