@@ -23,3 +23,9 @@ data/qwen_zh_sft/raw/*.jsonl
 data/qwen_zh_sft/adapters/
 data/qwen_zh_short_sft/raw/*.jsonl
 data/qwen_zh_short_sft/adapters/
+
+# Large model weight & tokenizer files
+*.safetensors
+merges.txt
+vocab.json
+**/tokenizer.json
