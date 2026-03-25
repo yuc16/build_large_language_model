@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多模态大模型 · 训练与推理流程图</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
+        :root {
+            --bg: #07090d;
+            --bg2: #0d1117;
+            --bg3: #131920;
+            --border: #1c2430;
+            --border2: #243040;
+
+            --teal: #2dd4b0;
+            --teal-dim: rgba(45, 212, 176, 0.15);
+            --teal-glow: rgba(45, 212, 176, 0.35);
+
+            --amber: #f0b429;
+            --amber-dim: rgba(240, 180, 41, 0.13);
+
+            --blue: #5b9cf6;
+            --blue-dim: rgba(91, 156, 246, 0.13);
+
+            --rose: #f26b7a;
+            --rose-dim: rgba(242, 107, 122, 0.13);
+
+            --violet: #a78bfa;
+            --violet-dim: rgba(167, 139, 250, 0.13);
+
+            --lime: #86efac;
+            --lime-dim: rgba(134, 239, 172, 0.12);
+
+            --text: #b8c4d0;
+            --text-hi: #e8edf3;
+            --text-lo: #4a5a6a;
+
+            --r: 7px;
+            --mono: 'IBM Plex Mono', monospace;
+            --sans: 'Noto Sans SC', sans-serif;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--sans);
+            font-size: 13px;
+            line-height: 1.5;
+            padding: 40px 32px 80px;
+            min-width: 900px;
+        }
+
+        /* ── Page header ── */
+        .page-header {
+            display: flex;
+            align-items: baseline;
+            gap: 16px;
+            margin-bottom: 48px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .page-title {
+            font-family: var(--mono);
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-hi);
+            letter-spacing: -0.3px;
+        }
+
+        .page-sub {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-lo);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        /* ── Section labels ── */
+        .section-wrap {
+            margin-bottom: 56px;
+        }
+
+        .section-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .section-label .pill {
+            font-family: var(--mono);
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            padding: 3px 10px;
+            border-radius: 20px;
+        }
+
+        .pill-train {
+            background: var(--amber-dim);
+            color: var(--amber);
+            border: 1px solid rgba(240, 180, 41, 0.3);
+        }
+
+        .pill-infer {
+            background: var(--teal-dim);
+            color: var(--teal);
+            border: 1px solid var(--teal-glow);
+        }
+
+        .section-label .line {
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* ── Generic node ── */
+        .node {
+            border-radius: var(--r);
+            border: 1px solid var(--border2);
+            padding: 10px 14px;
+            position: relative;
+            transition: border-color .2s;
+        }
+
+        .node:hover {
+            border-color: var(--border2);
+        }
+
+        .node-title {
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            margin-bottom: 3px;
+            white-space: nowrap;
+        }
+
+        .node-sub {
+            font-size: 11px;
+            color: var(--text-lo);
+            white-space: nowrap;
+        }
+
+        /* colour variants */
+        .n-teal {
+            background: var(--teal-dim);
+            border-color: rgba(45, 212, 176, 0.35);
+        }
+
+        .n-teal .node-title {
+            color: var(--teal);
+        }
+
+        .n-amber {
+            background: var(--amber-dim);
+            border-color: rgba(240, 180, 41, 0.35);
+        }
+
+        .n-amber .node-title {
+            color: var(--amber);
+        }
+
+        .n-blue {
+            background: var(--blue-dim);
+            border-color: rgba(91, 156, 246, 0.35);
+        }
+
+        .n-blue .node-title {
+            color: var(--blue);
+        }
+
+        .n-rose {
+            background: var(--rose-dim);
+            border-color: rgba(242, 107, 122, 0.35);
+        }
+
+        .n-rose .node-title {
+            color: var(--rose);
+        }
+
+        .n-violet {
+            background: var(--violet-dim);
+            border-color: rgba(167, 139, 250, 0.35);
+        }
+
+        .n-violet .node-title {
+            color: var(--violet);
+        }
+
+        .n-lime {
+            background: var(--lime-dim);
+            border-color: rgba(134, 239, 172, 0.35);
+        }
+
+        .n-lime .node-title {
+            color: var(--lime);
+        }
+
+        .n-dim {
+            background: var(--bg3);
+            border-color: var(--border2);
+        }
+
+        .n-dim .node-title {
+            color: var(--text);
+        }
+
+        /* badge on node */
+        .badge {
+            position: absolute;
+            top: -9px;
+            right: 10px;
+            font-family: var(--mono);
+            font-size: 9px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            padding: 1px 7px;
+            border-radius: 4px;
+        }
+
+        .badge-frozen {
+            background: rgba(91, 156, 246, 0.2);
+            color: var(--blue);
+            border: 1px solid rgba(91, 156, 246, 0.4);
+        }
+
+        .badge-train {
+            background: rgba(240, 180, 41, 0.2);
+            color: var(--amber);
+            border: 1px solid rgba(240, 180, 41, 0.4);
+        }
+
+        /* ── Arrow ── */
+        .arr {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-lo);
+            font-size: 15px;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .arr-label {
+            position: absolute;
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--text-lo);
+            white-space: nowrap;
+            top: -13px;
+            letter-spacing: 0.3px;
+        }
+
+        /* ── Row layout helpers ── */
+        .flow-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: nowrap;
+        }
+
+        .flow-col {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        /* ── Data node (inputs) ── */
+        .data-node {
+            border: 1px dashed var(--border2);
+            border-radius: var(--r);
+            padding: 8px 12px;
+            background: var(--bg2);
+        }
+
+        .data-node .dn-title {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-lo);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 2px;
+        }
+
+        .data-node .dn-body {
+            font-size: 12px;
+            color: var(--text);
+        }
+
+        /* ── Stage container ── */
+        .stage-box {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px 24px;
+            margin-bottom: 16px;
+        }
+
+        .stage-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .stage-num {
+            font-family: var(--mono);
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--bg2);
+            padding: 2px 8px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .sn-amber {
+            background: var(--amber);
+        }
+
+        .sn-blue {
+            background: var(--blue);
+        }
+
+        .sn-violet {
+            background: var(--violet);
+        }
+
+        .sn-teal {
+            background: var(--teal);
+        }
+
+        .stage-title {
+            font-family: var(--mono);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-hi);
+        }
+
+        .stage-desc {
+            font-size: 11px;
+            color: var(--text-lo);
+            margin-left: auto;
+        }
+
+        /* ── Connector block ── */
+        .connector-block {
+            background: var(--bg3);
+            border: 1px solid var(--border2);
+            border-radius: var(--r);
+            padding: 10px 14px;
+            min-width: 130px;
+        }
+
+        .cb-title {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-lo);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        /* ── Merge / split indicator ── */
+        .merge {
+            font-size: 18px;
+            color: var(--text-lo);
+            display: flex;
+            align-items: center;
+            padding: 0 4px;
+        }
+
+        /* ── Annotation ── */
+        .annot {
+            font-size: 11px;
+            color: var(--text-lo);
+            font-family: var(--mono);
+            padding: 6px 10px;
+            border-left: 2px solid var(--border2);
+            margin-top: 8px;
+        }
+
+        /* ── Loss box ── */
+        .loss-box {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(242, 107, 122, 0.1);
+            border: 1px solid rgba(242, 107, 122, 0.3);
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--rose);
+        }
+
+        /* ── KV box ── */
+        .kv-box {
+            background: rgba(167, 139, 250, 0.1);
+            border: 1px solid rgba(167, 139, 250, 0.3);
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 11px;
+        }
+
+        .kv-box .kv-title {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--violet);
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        /* ── Token sequence visual ── */
+        .token-seq {
+            display: flex;
+            gap: 3px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .tok {
+            font-family: var(--mono);
+            font-size: 9px;
+            padding: 3px 6px;
+            border-radius: 3px;
+            white-space: nowrap;
+        }
+
+        .tok-vis {
+            background: rgba(45, 212, 176, 0.15);
+            color: var(--teal);
+            border: 1px solid rgba(45, 212, 176, 0.3);
+        }
+
+        .tok-text {
+            background: rgba(91, 156, 246, 0.15);
+            color: var(--blue);
+            border: 1px solid rgba(91, 156, 246, 0.3);
+        }
+
+        .tok-gen {
+            background: rgba(134, 239, 172, 0.15);
+            color: var(--lime);
+            border: 1px solid rgba(134, 239, 172, 0.3);
+        }
+
+        .tok-sep {
+            color: var(--text-lo);
+            font-size: 14px;
+        }
+
+        /* ── Divider ── */
+        hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 40px 0;
+        }
+
+        /* ── Legend ── */
+        .legend {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            padding: 14px 18px;
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-top: 40px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-lo);
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+
+        /* down arrow */
+        .down-arr {
+            display: flex;
+            justify-content: center;
+            color: var(--text-lo);
+            font-size: 18px;
+            margin: 4px 0;
+        }
+
+        /* vertical connector line */
+        .v-line {
+            width: 1px;
+            background: var(--border2);
+            margin: 0 auto;
+            height: 16px;
+        }
+
+        /* wide layout */
+        .wide {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wide">
+
+        <!-- Header -->
+        <div class="page-header">
+            <div class="page-title">多模态大语言模型 · 训练 & 推理流程</div>
+            <div class="page-sub">Multimodal LLM Pipeline</div>
+        </div>
+
+
+        <!-- ════════════════════════════════════════
+     TRAINING
+════════════════════════════════════════ -->
+        <div class="section-wrap">
+            <div class="section-label">
+                <span class="pill pill-train">训练阶段 Training</span>
+                <div class="line"></div>
+            </div>
+
+            <!-- ── Stage 1 ── -->
+            <div class="stage-box">
+                <div class="stage-header">
+                    <span class="stage-num sn-amber">Stage 1</span>
+                    <span class="stage-title">特征对齐预训练</span>
+                    <span class="stage-desc">数百万图文对 · 只训连接器</span>
+                </div>
+
+                <!-- Inputs -->
+                <div class="flow-row" style="margin-bottom:14px; gap:10px;">
+                    <div class="data-node">
+                        <div class="dn-title">输入</div>
+                        <div class="dn-body">🖼 图像</div>
+                    </div>
+                    <div class="arr" style="font-size:12px; color:var(--text-lo)">+</div>
+                    <div class="data-node">
+                        <div class="dn-title">输入</div>
+                        <div class="dn-body">📝 配对文本描述</div>
+                    </div>
+                    <div style="margin-left:auto; font-size:11px; color:var(--text-lo); font-family:var(--mono)">
+                        数据集: CC3M / LAION / COYO ...
+                    </div>
+                </div>
+
+                <!-- Main flow -->
+                <div class="flow-row" style="align-items:stretch; gap:6px;">
+
+                    <!-- Vision branch -->
+                    <div class="flow-col" style="align-items:center; min-width:130px;">
+                        <div
+                            style="font-family:var(--mono);font-size:9px;color:var(--text-lo);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">
+                            视觉分支</div>
+                        <div class="node n-teal" style="width:100%">
+                            <span class="badge badge-frozen">Frozen</span>
+                            <div class="node-title">视觉编码器</div>
+                            <div class="node-sub">CLIP ViT-L/G</div>
+                        </div>
+                        <div class="v-line"></div>
+                        <div class="node n-dim" style="width:100%; font-size:11px;">
+                            <div class="node-title" style="color:var(--text-lo)">Patch 切分</div>
+                            <div class="node-sub">224×224 → 196 patches</div>
+                        </div>
+                        <div class="v-line"></div>
+                        <div class="node n-teal" style="width:100%;">
+                            <div class="node-title">视觉特征</div>
+                            <div class="node-sub">[196 × D<sub style="font-size:9px">vis</sub>]</div>
+                        </div>
+                    </div>
+
+                    <!-- Arrow to connector -->
+                    <div class="arr" style="padding-top:60px;">
+                        <span class="arr-label">投影对齐</span>
+                        →
+                    </div>
+
+                    <!-- Connector -->
+                    <div class="flow-col" style="align-items:center; min-width:140px; justify-content:center;">
+                        <div class="node n-amber" style="width:100%; text-align:center;">
+                            <span class="badge badge-train">Trainable ✦</span>
+                            <div class="node-title" style="text-align:center;">模态连接器</div>
+                            <div class="node-sub" style="text-align:center;">Linear / MLP / Q-Former</div>
+                        </div>
+                        <div
+                            style="font-size:10px;color:var(--text-lo);font-family:var(--mono);margin-top:8px;text-align:center;line-height:1.6;">
+                            D<sub>vis</sub> → D<sub>llm</sub><br>
+                            (唯一更新的参数)
+                        </div>
+                    </div>
+
+                    <!-- Arrow to LLM -->
+                    <div class="arr" style="padding-top:60px;">
+                        <span class="arr-label">视觉 tokens</span>
+                        →
+                    </div>
+
+                    <!-- LLM + Text -->
+                    <div class="flow-col" style="flex:1; min-width:200px;">
+                        <div
+                            style="font-family:var(--mono);font-size:9px;color:var(--text-lo);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">
+                            语言分支</div>
+                        <div class="flow-row" style="gap:6px; align-items:center;">
+                            <div class="node n-dim" style="flex:1;">
+                                <div class="node-title">文本 Tokenizer</div>
+                                <div class="node-sub">图像描述 → tokens</div>
+                            </div>
+                        </div>
+                        <div class="v-line"></div>
+                        <!-- Token sequence -->
+                        <div
+                            style="padding:10px; background:var(--bg3); border:1px solid var(--border2); border-radius:var(--r);">
+                            <div style="font-family:var(--mono);font-size:9px;color:var(--text-lo);margin-bottom:6px;">
+                                拼接输入序列</div>
+                            <div class="token-seq">
+                                <span class="tok tok-vis">img₁</span>
+                                <span class="tok tok-vis">img₂</span>
+                                <span class="tok tok-vis">···</span>
+                                <span class="tok tok-vis">img₁₉₆</span>
+                                <span class="tok-sep">|</span>
+                                <span class="tok tok-text">A</span>
+                                <span class="tok tok-text">dog</span>
+                                <span class="tok tok-text">on</span>
+                                <span class="tok tok-text">···</span>
+                            </div>
+                        </div>
+                        <div class="v-line"></div>
+                        <div class="node n-blue" style="position:relative;">
+                            <span class="badge badge-frozen">Frozen</span>
+                            <div class="node-title">LLM Backbone</div>
+                            <div class="node-sub">Causal LM · Self-Attention</div>
+                        </div>
+                        <div class="v-line"></div>
+                        <div class="loss-box">
+                            <span>⊗</span>
+                            <span>Loss: Next Token Prediction (文本部分)</span>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="annot" style="margin-top:14px;">
+                    目标：让连接器学会将视觉特征投影到 LLM 的语义空间。视觉 encoder 和 LLM 全程冻结，只有连接器参数被更新。
+                </div>
+            </div>
+
+            <!-- ── Stage 2 ── -->
+            <div class="stage-box">
+                <div class="stage-header">
+                    <span class="stage-num sn-blue">Stage 2</span>
+                    <span class="stage-title">视觉指令微调</span>
+                    <span class="stage-desc">高质量指令数据 · 解冻 LLM + 连接器</span>
+                </div>
+
+                <div class="flow-row" style="align-items:stretch; gap:6px;">
+
+                    <!-- Vision branch -->
+                    <div class="flow-col" style="align-items:center; min-width:130px;">
+                        <div class="node n-teal" style="width:100%">
+                            <span class="badge badge-frozen">Frozen</span>
+                            <div class="node-title">视觉编码器</div>
+                            <div class="node-sub">CLIP ViT (冻结)</div>
+                        </div>
+                        <div class="v-line"></div>
+                        <div class="node n-teal" style="width:100%;">
+                            <div class="node-title">视觉特征</div>
+                            <div class="node-sub">[196 × D<sub style="font-size:9px">vis</sub>]</div>
+                        </div>
+                    </div>
+
+                    <div class="arr" style="padding-top:40px;">→</div>
+
+                    <div class="flow-col" style="align-items:center; min-width:140px; justify-content:center;">
+                        <div class="node n-amber" style="width:100%; text-align:center;">
+                            <span class="badge badge-train">Trainable ✦</span>
+                            <div class="node-title" style="text-align:center;">模态连接器</div>
+                            <div class="node-sub" style="text-align:center;">MLP (继续训练)</div>
+                        </div>
+                    </div>
+
+                    <div class="arr" style="padding-top:40px;">→</div>
+
+                    <div class="flow-col" style="flex:1; min-width:200px;">
+                        <!-- Instruction input -->
+                        <div class="flow-row" style="gap:6px;">
+                            <div class="data-node" style="flex:1;">
+                                <div class="dn-title">指令输入</div>
+                                <div class="dn-body">User: 图中有什么动物？</div>
+                            </div>
+                        </div>
+                        <div class="v-line"></div>
+                        <div
+                            style="padding:10px; background:var(--bg3); border:1px solid var(--border2); border-radius:var(--r);">
+                            <div style="font-family:var(--mono);font-size:9px;color:var(--text-lo);margin-bottom:6px;">
+                                指令格式序列</div>
+                            <div class="token-seq">
+                                <span class="tok tok-vis">img₁</span>
+                                <span class="tok tok-vis">···</span>
+                                <span class="tok tok-vis">img₁₉₆</span>
+                                <span class="tok-sep">|</span>
+                                <span class="tok tok-text">&lt;user&gt;</span>
+                                <span class="tok tok-text">有什么</span>
+                                <span class="tok tok-text">动物</span>
+                                <span class="tok tok-text">&lt;/user&gt;</span>
+                                <span class="tok-sep">|</span>
+                                <span class="tok tok-gen">&lt;asst&gt;</span>
+                                <span class="tok tok-gen">图中</span>
+                                <span class="tok tok-gen">是...</span>
+                            </div>
+                        </div>
+                        <div class="v-line"></div>
+                        <div class="node n-blue" style="position:relative;">
+                            <span class="badge badge-train">Trainable ✦</span>
+                            <div class="node-title">LLM Backbone</div>
+                            <div class="node-sub">解冻，联合更新</div>
+                        </div>
+                        <div class="v-line"></div>
+                        <div class="loss-box">
+                            <span>⊗</span>
+                            <span>Loss: 只在 Assistant 回答的 token 上计算</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="annot" style="margin-top:14px;">
+                    目标：学习指令跟随 + 视觉问答。数据量小但质量高（LLaVA 仅用 15 万 GPT-4 生成的样本）。LLM 以较小学习率 finetune，视觉 encoder 通常仍冻结。
+                </div>
+            </div>
+
+            <!-- ── Stage 3 ── -->
+            <div class="stage-box">
+                <div class="stage-header">
+                    <span class="stage-num sn-violet">Stage 3</span>
+                    <span class="stage-title">RLHF / DPO 对齐</span>
+                    <span class="stage-desc">可选 · 减少幻觉，提升安全性</span>
+                </div>
+
+                <div class="flow-row" style="gap:10px; align-items:center; flex-wrap:wrap;">
+
+                    <div class="node n-violet" style="min-width:160px;">
+                        <div class="node-title">偏好数据收集</div>
+                        <div class="node-sub">chosen / rejected 对</div>
+                    </div>
+                    <div class="arr">→</div>
+
+                    <div class="node n-violet" style="min-width:160px;">
+                        <div class="node-title">Reward Model 训练</div>
+                        <div class="node-sub">或直接用 DPO 跳过此步</div>
+                    </div>
+                    <div class="arr">→</div>
+
+                    <div class="node n-blue" style="min-width:160px;">
+                        <span class="badge badge-train">Trainable ✦</span>
+                        <div class="node-title">LLM 策略更新</div>
+                        <div class="node-sub">PPO / DPO · KL 约束</div>
+                    </div>
+                    <div class="arr">→</div>
+
+                    <div class="node n-lime" style="min-width:120px; text-align:center;">
+                        <div class="node-title" style="text-align:center;">✓ 对齐模型</div>
+                        <div class="node-sub" style="text-align:center;">部署就绪</div>
+                    </div>
+
+                </div>
+
+                <div class="annot" style="margin-top:14px;">
+                    和纯文本 RLHF 完全一致，只是 prompt 包含图像。目标：减少幻觉、拒绝有害内容、提升指令跟随质量。GPT-4V / Claude 3 均有此阶段。
+                </div>
+            </div>
+
+        </div>
+
+        <hr>
+
+        <!-- ════════════════════════════════════════
+     INFERENCE
+════════════════════════════════════════ -->
+        <div class="section-wrap">
+            <div class="section-label">
+                <span class="pill pill-infer">推理阶段 Inference</span>
+                <div class="line"></div>
+            </div>
+
+            <!-- Prefill phase -->
+            <div class="stage-box" style="margin-bottom:16px;">
+                <div class="stage-header">
+                    <span class="stage-num sn-teal">Phase 1</span>
+                    <span class="stage-title">Prefill（并行编码）</span>
+                    <span class="stage-desc">图像 + Prompt 一次性前向传播</span>
+                </div>
+
+                <div class="flow-row" style="align-items:stretch; gap:6px;">
+
+                    <!-- Vision path -->
+                    <div class="flow-col" style="min-width:130px; align-items:center;">
+                        <div class="data-node" style="width:100%;">
+                            <div class="dn-title">用户输入</div>
+                            <div class="dn-body">🖼 输入图像</div>
+                        </div>
+                        <div class="v-line"></div>
+                        <div class="node n-teal" style="width:100%;">
+                            <div class="node-title">视觉编码器</div>
+                            <div class="node-sub">ViT forward pass</div>
+                        </div>
+                        <div class="v-line"></div>
+                        <div class="node n-teal" style="width:100%;">
+                            <div class="node-title">连接器</div>
+                            <div class="node-sub">→ N 个视觉 token</div>
+                        </div>
+                    </div>
+
+                    <div class="merge" style="padding-top:80px; font-size:22px;">⊕</div>
+
+                    <!-- Text path -->
+                    <div class="flow-col" style="min-width:130px; align-items:center;">
+                        <div class="data-node" style="width:100%;">
+                            <div class="dn-title">用户输入</div>
+                            <div class="dn-body">💬 文本 Prompt</div>
+                        </div>
+                        <div class="v-line"></div>
+                        <div class="node n-dim" style="width:100%;">
+                            <div class="node-title">Tokenizer</div>
+                            <div class="node-sub">→ 文本 token 序列</div>
+                        </div>
+                        <div style="height:42px;"></div>
+                    </div>
+
+                    <!-- Combined sequence -->
+                    <div class="arr" style="padding-top:60px;">→</div>
+
+                    <div class="flow-col" style="flex:1;">
+                        <div
+                            style="padding:12px 14px; background:var(--bg3); border:1px solid var(--border2); border-radius:var(--r); margin-bottom:6px;">
+                            <div style="font-family:var(--mono);font-size:9px;color:var(--text-lo);margin-bottom:8px;">
+                                拼接后的完整序列</div>
+                            <div class="token-seq">
+                                <span class="tok tok-vis">img₁</span>
+                                <span class="tok tok-vis">img₂</span>
+                                <span class="tok tok-vis">···</span>
+                                <span class="tok tok-vis">imgₙ</span>
+                                <span class="tok-sep">&nbsp;</span>
+                                <span class="tok tok-text">&lt;sys&gt;</span>
+                                <span class="tok tok-text">你是...</span>
+                                <span class="tok tok-text">&lt;user&gt;</span>
+                                <span class="tok tok-text">描述</span>
+                                <span class="tok tok-text">图片</span>
+                            </div>
+                        </div>
+                        <div class="v-line"></div>
+                        <div class="node n-blue" style="width:100%;">
+                            <div class="node-title">LLM · 并行 Self-Attention</div>
+                            <div class="node-sub">所有 token 同时计算 · 视觉 token 与文本 token 互相 attend</div>
+                        </div>
+                        <div class="v-line"></div>
+                        <!-- KV Cache -->
+                        <div class="kv-box">
+                            <div class="kv-title">💾 KV Cache 生成 & 存储</div>
+                            <div style="font-size:11px; color:var(--text);">
+                                视觉 token 的 K/V 矩阵在此一次性计算并缓存。<br>后续生成阶段不会重新计算视觉部分。
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Decode phase -->
+            <div class="stage-box">
+                <div class="stage-header">
+                    <span class="stage-num sn-teal">Phase 2</span>
+                    <span class="stage-title">Decode（自回归生成）</span>
+                    <span class="stage-desc">逐 token 生成，读取 KV Cache</span>
+                </div>
+
+                <div class="flow-row" style="gap:6px; align-items:stretch; flex-wrap:wrap;">
+
+                    <div class="flow-col" style="min-width:160px; justify-content:center;">
+                        <div class="node n-lime">
+                            <div class="node-title">当前 token</div>
+                            <div class="node-sub">上一步生成的 token<br>（首次为 &lt;asst&gt;）</div>
+                        </div>
+                    </div>
+
+                    <div class="arr">→</div>
+
+                    <div class="flow-col" style="min-width:180px; justify-content:center;">
+                        <div class="node n-blue">
+                            <div class="node-title">LLM 单步 Forward</div>
+                            <div class="node-sub">仅计算新 token 的 Q<br>与缓存 K/V 做 Attention</div>
+                        </div>
+                        <div
+                            style="font-size:10px;color:var(--text-lo);font-family:var(--mono);margin-top:6px;padding:0 2px;">
+                            Attention(Q_new, K_cache, V_cache)
+                        </div>
+                    </div>
+
+                    <div class="arr">→</div>
+
+                    <div class="flow-col" style="min-width:150px; justify-content:center;">
+                        <div class="node n-dim">
+                            <div class="node-title">Logits + 采样</div>
+                            <div class="node-sub">Temperature / Top-p<br>Greedy 等采样策略</div>
+                        </div>
+                    </div>
+
+                    <div class="arr">→</div>
+
+                    <div class="flow-col" style="min-width:130px; justify-content:center;">
+                        <div class="node n-lime">
+                            <div class="node-title">下一个 token</div>
+                            <div class="node-sub">追加到 KV Cache</div>
+                        </div>
+                    </div>
+
+                    <div class="arr" style="color:var(--amber);">↩</div>
+
+                    <div
+                        style="display:flex; align-items:center; font-family:var(--mono);font-size:10px;color:var(--amber); padding:6px 10px; background:var(--amber-dim); border:1px solid rgba(240,180,41,0.3); border-radius:6px; align-self:center;">
+                        循环直到 &lt;EOS&gt;
+                    </div>
+
+                </div>
+
+                <div
+                    style="margin-top:16px; padding:12px 14px; background:var(--bg3); border:1px solid var(--border2); border-radius:var(--r);">
+                    <div style="font-family:var(--mono);font-size:9px;color:var(--text-lo);margin-bottom:8px;">
+                        生成过程中的序列增长</div>
+                    <div class="token-seq">
+                        <span class="tok tok-vis">img₁···imgₙ</span>
+                        <span class="tok tok-text">&lt;user&gt;描述图片</span>
+                        <span class="tok tok-gen">&lt;asst&gt;</span>
+                        <span class="tok tok-gen">这张</span>
+                        <span class="tok tok-gen">图片</span>
+                        <span class="tok tok-gen">展示</span>
+                        <span class="tok tok-gen">了</span>
+                        <span style="font-family:var(--mono);font-size:11px;color:var(--text-lo);">···逐步生成···</span>
+                        <span class="tok tok-gen">&lt;EOS&gt;</span>
+                    </div>
+                </div>
+
+                <div class="annot" style="margin-top:10px;">
+                    关键：生成阶段视觉 token 的 K/V 已缓存，每步只做新 token 的 Attention 计算。图像的推理开销集中在 Prefill，与生成长度无关。
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Legend -->
+        <div class="legend">
+            <div
+                style="font-family:var(--mono);font-size:10px;color:var(--text-lo);letter-spacing:1px;text-transform:uppercase;align-self:center;">
+                图例</div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background:rgba(45,212,176,0.4);border:1px solid var(--teal);"></div>
+                视觉编码器 (CLIP ViT)
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background:rgba(240,180,41,0.4);border:1px solid var(--amber);"></div>
+                模态连接器
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background:rgba(91,156,246,0.4);border:1px solid var(--blue);"></div>LLM
+                Backbone
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background:rgba(134,239,172,0.4);border:1px solid var(--lime);"></div>
+                生成输出
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background:rgba(167,139,250,0.4);border:1px solid var(--violet);"></div>
+                对齐 / KV Cache
+            </div>
+            <div class="legend-item">
+                <span
+                    style="font-family:var(--mono);font-size:9px;padding:1px 6px;background:rgba(91,156,246,0.2);color:var(--blue);border:1px solid rgba(91,156,246,0.4);border-radius:3px;">Frozen</span>
+                &nbsp;冻结，不更新
+            </div>
+            <div class="legend-item">
+                <span
+                    style="font-family:var(--mono);font-size:9px;padding:1px 6px;background:rgba(240,180,41,0.2);color:var(--amber);border:1px solid rgba(240,180,41,0.4);border-radius:3px;">Trainable
+                    ✦</span>
+                &nbsp;该阶段参数被更新
+            </div>
+        </div>
+
+    </div>
+</body>
+
+</html>
